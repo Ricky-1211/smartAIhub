@@ -1,5 +1,9 @@
 """
 Shared configuration for all services
+
+SECURITY NOTE: This file uses environment variables with fallback defaults.
+For production, always set proper environment variables - never rely on defaults.
+Default values like "postgres" and "your-secret-key-change-in-production" are for development only.
 """
 import os
 from typing import Optional
