@@ -1,0 +1,212 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: smartaihub-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: smartaihub
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Gateway
+  gateway:
+    build: ./gateway
+    container_name: smartaihub-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - SPAM_SERVICE_URL=http://spam-service:8002
+      - WHATSAPP_SERVICE_URL=http://whatsapp-service:8003
+      - MOVIE_SERVICE_URL=http://movie-service:8004
+      - RESUME_SERVICE_URL=http://resume-service:8005
+      - HOUSE_SERVICE_URL=http://house-service:8006
+      - FRAUD_SERVICE_URL=http://fraud-service:8007
+      - CODE_REVIEW_SERVICE_URL=http://code-review-service:8008
+      - LOGGING_SERVICE_URL=http://logging-service:8009
+      - SEARCH_SERVICE_URL=http://search-service:8010
+      - MODEL_MGMT_SERVICE_URL=http://model-mgmt-service:8011
+    depends_on:
+      - auth-service
+    networks:
+      - smartaihub-network
+
+  # Auth Service
+  auth-service:
+    build: ./auth-service
+    container_name: smartaihub-auth
+    ports:
+      - "8001:8001"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=smartaihub
+      - JWT_SECRET_KEY=your-secret-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - smartaihub-network
+
+  # Spam Detection Service
+  spam-service:
+    build: ./ai-services/spam-detection
+    container_name: smartaihub-spam
+    ports:
+      - "8002:8002"
+    volumes:
+      - spam_models:/app/models
+    networks:
+      - smartaihub-network
+
+  # WhatsApp Analysis Service
+  whatsapp-service:
+    build: ./ai-services/whatsapp-analysis
+    container_name: smartaihub-whatsapp
+    ports:
+      - "8003:8003"
+    networks:
+      - smartaihub-network
+
+  # Movie Recommendation Service
+  movie-service:
+    build: ./ai-services/movie-recommendation
+    container_name: smartaihub-movie
+    ports:
+      - "8004:8004"
+    networks:
+      - smartaihub-network
+
+  # Resume Matcher Service
+  resume-service:
+    build: ./ai-services/resume-matcher
+    container_name: smartaihub-resume
+    ports:
+      - "8005:8005"
+    networks:
+      - smartaihub-network
+
+  # House Price Prediction Service
+  house-service:
+    build: ./ai-services/house-price-prediction
+    container_name: smartaihub-house
+    ports:
+      - "8006:8006"
+    volumes:
+      - house_models:/app/models
+    networks:
+      - smartaihub-network
+
+  # Fraud Detection Service
+  fraud-service:
+    build: ./ai-services/fraud-detection
+    container_name: smartaihub-fraud
+    ports:
+      - "8007:8007"
+    volumes:
+      - fraud_models:/app/models
+    networks:
+      - smartaihub-network
+
+  # Code Review Service
+  code-review-service:
+    build: ./system-services/code-review
+    container_name: smartaihub-code-review
+    ports:
+      - "8008:8008"
+    networks:
+      - smartaihub-network
+
+  # Logging Service
+  logging-service:
+    build: ./system-services/logging-service
+    container_name: smartaihub-logging
+    ports:
+      - "8009:8009"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=smartaihub_logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - smartaihub-network
+
+  # Search Service
+  search-service:
+    build: ./system-services/search-service
+    container_name: smartaihub-search
+    ports:
+      - "8010:8010"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=smartaihub_search
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - smartaihub-network
+
+  # Model Management Service
+  model-mgmt-service:
+    build: ./system-services/model-management
+    container_name: smartaihub-model-mgmt
+    ports:
+      - "8011:8011"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=smartaihub_models
+    volumes:
+      - model_storage:/app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - smartaihub-network
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    container_name: smartaihub-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - gateway
+    networks:
+      - smartaihub-network
+
+volumes:
+  postgres_data:
+  spam_models:
+  house_models:
+  fraud_models:
+  model_storage:
+
+networks:
+  smartaihub-network:
+    driver: bridge
+
