@@ -44,18 +44,35 @@ yarn-error.log*
 .DS_Store
 
 # Environment Variables & Secrets
+# Ignore all .env files (root and subdirectories)
 .env
+**/.env
 .env.*
+**/.env.*
 .env.local
+**/.env.local
 .env.*.local
+**/.env.*.local
 .env.production
+**/.env.production
 .env.development
+**/.env.development
 .env.test
+**/.env.test
 .env.staging
+**/.env.staging
+
+# Ignore all files ending in .env (but keep .env.example files)
 *.env
-# Keep .env.example files
+**/*.env
+# Keep .env.example files (root and subdirectories)
 !.env.example
+!**/.env.example
+!*.env.example
+!**/*.env.example
+# Keep env-examples directory
 !env-examples/
+!env-examples/**
 
 # Logs
 logs/
